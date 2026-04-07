@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agentic AI - Voice Companion</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .container {
+            text-align: center;
+            padding: 20px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .ai-avatar {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #ffffff20, #ffffff10);
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 30px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .ai-avatar.listening {
+            border-color: #ff6b6b;
+            box-shadow: 0 0 60px rgba(255, 107, 107, 0.5);
+            animation: pulse 1s ease-in-out infinite;
+        }
+
+        .ai-avatar.speaking {
+            border-color: #4ecdc4;
+            box-shadow: 0 0 60px rgba(78, 205, 196, 0.5);
+            animation: ripple 0.8s ease-in-out infinite;
+        }
+
+        .ai-avatar.thinking {
+            border-color: #ffe66d;
+            animation: rotate 2s linear infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        @keyframes ripple {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.03); opacity: 0.9; }
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .ai-icon {
+            font-size: 80px;
+        }
+
+        .wave-container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            overflow: hidden;
+        }
+
+        .wave {
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            border-radius: 40%;
+            animation: wave 10s linear infinite;
+        }
+
+        @keyframes wave {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-bottom: 40px;
+        }
+
+        .status-text {
+            font-size: 1.3rem;
+            margin-bottom: 30px;
+            min-height: 30px;
+            transition: all 0.3s ease;
+        }
+
+        .status-text.listening { color: #ff6b6b; }
+        .status-text.speaking { color: #4ecdc4; }
+        .status-text.thinking { color: #ffe66d; }
+
+        .transcript-box {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 30px;
+            min-height: 120px;
+            max-height: 200px;
+            overflow-y: auto;
+            text-align: left;
+        }
+
+        .transcript-label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.7;
+            margin-bottom: 10px;
+        }
+
+        .transcript-content {
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+
+        .user-speech {
+            color: #ff6b6b;
+            margin-bottom: 15px;
+        }
+
+        .ai-speech {
+            color: #4ecdc4;
+        }
+
+        .controls {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #ff5252;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(255, 107, 107, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .settings {
+            margin-top: 40px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+        }
+
+        .setting-item {
+            margin-bottom: 15px;
+        }
+
+        .setting-label {
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        select {
+            padding: 10px 15px;
+            border-radius: 10px;
+            border: none;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 0.9rem;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        select option {
+            background: #764ba2;
+            color: white;
+        }
+
+        .hint {
+            font-size: 0.85rem;
+            opacity: 0.8;
+            margin-top: 20px;
+        }
+
+        .connection-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .connection-status.connected {
+            background: #2ecc71;
+        }
+
+        .connection-status.disconnected {
+            background: #e74c3c;
+        }
+
+        .connection-status.connecting {
+            background: #f39c12;
+        }
+
+        @media (max-width: 600px) {
+            h1 { font-size: 2rem; }
+            .ai-avatar { width: 140px; height: 140px; }
+            .ai-icon { font-size: 60px; }
+            .subtitle { font-size: 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="connection-status connecting" id="connectionStatus">Connecting...</div>
+
+    <div class="container">
+        <div class="ai-avatar" id="aiAvatar">
+            <div class="wave-container">
+                <div class="wave"></div>
+            </div>
+            <span class="ai-icon">🤖</span>
+        </div>
+
+        <h1>Agentic AI</h1>
+        <p class="subtitle">Your Voice Companion</p>
+
+        <div class="status-text" id="statusText">Click the microphone to start talking...</div>
+
+        <div class="transcript-box">
+            <div class="transcript-label">Conversation</div>
+            <div class="transcript-content" id="transcript">
+                <div style="opacity: 0.5; text-align: center; padding: 20px;">
+                    Start speaking to see your conversation here...
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-primary" id="micBtn" style="min-width: 200px; font-size: 1.1rem;">
+                <span id="micIcon">🎤</span>
+                <span id="micBtnText">Hold to Speak</span>
+            </button>
+            <button class="btn btn-secondary" id="clearBtn">
+                <span>🗑️</span>
+                <span>Clear Chat</span>
+            </button>
+        </div>
+        
+        <div id="debugInfo" style="margin-top: 15px; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 8px; font-family: monospace; font-size: 0.8rem; display: none;">
+            <div>Status: <span id="debugStatus">Idle</span></div>
+            <div>Mic Permission: <span id="debugMic">Unknown</span></div>
+        </div>
+
+        <!-- Text input fallback for testing -->
+        <div style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 10px;">
+            <label style="font-size: 0.9rem; display: block; margin-bottom: 8px;">Test with text (if voice not working):</label>
+            <input type="text" id="textInput" placeholder="Type your message here..." 
+                   style="padding: 10px 15px; border-radius: 8px; border: none; width: 70%; margin-right: 10px; font-size: 1rem;">
+            <button class="btn btn-secondary" id="sendTextBtn" style="padding: 10px 20px;">Send</button>
+        </div>
+
+        <div class="settings">
+            <div class="setting-item">
+                <label class="setting-label">AI Voice</label>
+                <select id="voiceSelect">
+                    <option value="">Default Voice</option>
+                </select>
+            </div>
+            <div class="setting-item">
+                <label class="setting-label">Speech Speed</label>
+                <select id="speedSelect">
+                    <option value="0.8">Slow</option>
+                    <option value="1" selected>Normal</option>
+                    <option value="1.2">Fast</option>
+                </select>
+            </div>
+        </div>
+
+        <p class="hint">💡 Tip: Speak clearly and pause briefly after finishing your sentence.</p>
+    </div>
+
+    <script>
+        // WebSocket connection
+        const clientId = 'user_' + Math.random().toString(36).substr(2, 9);
+        let ws = null;
+        let isConnected = false;
+
+        // Speech Recognition
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition = null;
+        let isListening = false;
+
+        // Speech Synthesis
+        const synth = window.speechSynthesis;
+        let voices = [];
+
+        // DOM elements
+        const aiAvatar = document.getElementById('aiAvatar');
+        const statusText = document.getElementById('statusText');
+        const transcript = document.getElementById('transcript');
+        const micBtn = document.getElementById('micBtn');
+        const micBtnText = document.getElementById('micBtnText');
+        const micIcon = document.getElementById('micIcon');
+        const clearBtn = document.getElementById('clearBtn');
+        const connectionStatus = document.getElementById('connectionStatus');
+        const voiceSelect = document.getElementById('voiceSelect');
+        const speedSelect = document.getElementById('speedSelect');
+        const debugInfo = document.getElementById('debugInfo');
+        const debugStatus = document.getElementById('debugStatus');
+        const debugMic = document.getElementById('debugMic');
+
+        // Conversation history
+        let conversation = [];
+
+        // Initialize
+        function init() {
+            setupWebSocket();
+            setupSpeechRecognition();
+            setupSpeechSynthesis();
+            setupEventListeners();
+        }
+
+        function setupWebSocket() {
+            const wsUrl = `ws://${window.location.host}/ws/${clientId}`;
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = () => {
+                isConnected = true;
+                updateConnectionStatus('connected');
+                console.log('Connected to AI server');
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                handleWebSocketMessage(data);
+            };
+
+            ws.onclose = () => {
+                isConnected = false;
+                updateConnectionStatus('disconnected');
+                console.log('Disconnected from AI server');
+                // Attempt to reconnect after 3 seconds
+                setTimeout(setupWebSocket, 3000);
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+        }
+
+        function handleWebSocketMessage(data) {
+            switch(data.type) {
+                case 'ai_thinking':
+                    if (data.status === 'started') {
+                        setAIState('thinking');
+                        statusText.textContent = 'AI is thinking...';
+                    } else {
+                        setAIState('idle');
+                    }
+                    break;
+
+                case 'ai_response':
+                    addToTranscript('ai', data.content);
+                    if (data.speak) {
+                        speak(data.content);
+                    }
+                    break;
+
+                case 'pong':
+                    // Heartbeat response
+                    break;
+            }
+        }
+
+        function setupSpeechRecognition() {
+            if (!SpeechRecognition) {
+                alert('Sorry, your browser does not support speech recognition. Please use Chrome or Edge.');
+                micBtn.disabled = true;
+                return;
+            }
+
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;  // Single utterance mode
+            recognition.interimResults = true;
+            recognition.lang = 'en-US';
+            
+            let finalTranscript = '';
+            let interimTranscript = '';
+
+            recognition.onstart = () => {
+                isListening = true;
+                finalTranscript = '';
+                interimTranscript = '';
+                setAIState('listening');
+                micBtnText.textContent = 'Listening...';
+                micIcon.textContent = '🔴';
+                statusText.textContent = 'Speak now!';
+                updateDebugStatus('Listening');
+                console.log('🎤 Speech recognition STARTED');
+            };
+
+            recognition.onend = () => {
+                isListening = false;
+                setAIState('idle');
+                micBtnText.textContent = 'Hold to Speak';
+                micIcon.textContent = '🎤';
+                statusText.textContent = 'Hold button to speak';
+                updateDebugStatus('Idle');
+                console.log('🛑 Speech recognition STOPPED');
+                
+                // Process final transcript if we have one
+                if (finalTranscript.trim()) {
+                    console.log('✅ Sending final transcript:', finalTranscript);
+                    sendSpeechToAI(finalTranscript.trim(), 0.9);
+                }
+            };
+
+            recognition.onresult = (event) => {
+                interimTranscript = '';
+                
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript;
+                        console.log('✅ FINAL result:', transcript);
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+
+                if (interimTranscript) {
+                    statusText.textContent = `Hearing: "${interimTranscript}"`;
+                    console.log('🎧 Interim:', interimTranscript);
+                }
+                
+                if (finalTranscript) {
+                    statusText.textContent = `Heard: "${finalTranscript}"`;
+                }
+            };
+
+            recognition.onerror = (event) => {
+                console.error('❌ Speech recognition error:', event.error);
+                updateDebugStatus('Error: ' + event.error);
+                
+                if (event.error === 'not-allowed') {
+                    statusText.textContent = '❌ Microphone blocked - click lock icon in address bar';
+                    micBtn.disabled = true;
+                    alert('Please allow microphone access:\n1. Click the 🔒 lock icon in the address bar\n2. Click Site settings\n3. Set Microphone to Allow\n4. Refresh the page');
+                } else if (event.error === 'no-speech') {
+                    statusText.textContent = 'No speech detected. Try speaking louder.';
+                } else if (event.error === 'audio-capture') {
+                    statusText.textContent = 'No microphone found. Check your device.';
+                } else if (event.error === 'network') {
+                    statusText.textContent = 'Network error. Check your connection.';
+                } else if (event.error === 'aborted') {
+                    // User stopped manually, ignore
+                } else {
+                    statusText.textContent = 'Error: ' + event.error;
+                }
+                
+                isListening = false;
+                setAIState('idle');
+                micBtnText.textContent = 'Hold to Speak';
+                micIcon.textContent = '🎤';
+            };
+        }
+
+        function sendSpeechToAI(transcript, confidence) {
+            console.log('📤 Sending to AI:', { transcript, confidence, isConnected });
+            
+            if (!isConnected) {
+                alert('Not connected to server. Please wait...');
+                return;
+            }
+
+            addToTranscript('user', transcript);
+
+            const message = JSON.stringify({
+                type: 'user_speech',
+                transcript: transcript,
+                confidence: confidence || 0.8,
+                timestamp: new Date().toISOString()
+            });
+            console.log('📨 WebSocket message:', message);
+
+            ws.send(message);
+        }
+
+        function setupSpeechSynthesis() {
+            // Load voices
+            function loadVoices() {
+                voices = synth.getVoices();
+                voiceSelect.innerHTML = '<option value="">Default Voice</option>';
+                
+                voices.forEach((voice, index) => {
+                    const option = document.createElement('option');
+                    option.value = index;
+                    option.textContent = `${voice.name} (${voice.lang})`;
+                    voiceSelect.appendChild(option);
+                });
+            }
+
+            loadVoices();
+            
+            if (speechSynthesis.onvoiceschanged !== undefined) {
+                speechSynthesis.onvoiceschanged = loadVoices;
+            }
+        }
+
+        function speak(text) {
+            // Cancel any ongoing speech
+            synth.cancel();
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            
+            // Set voice
+            const selectedVoice = voiceSelect.value;
+            if (selectedVoice !== '' && voices[selectedVoice]) {
+                utterance.voice = voices[selectedVoice];
+            }
+
+            // Set rate
+            utterance.rate = parseFloat(speedSelect.value);
+            utterance.pitch = 1;
+            utterance.volume = 1;
+
+            utterance.onstart = () => {
+                setAIState('speaking');
+                statusText.textContent = 'AI is speaking...';
+            };
+
+            utterance.onend = () => {
+                setAIState('idle');
+                statusText.textContent = 'Click the microphone to continue talking...';
+                
+                // Auto-restart listening after AI finishes speaking (optional)
+                // Uncomment below for continuous conversation
+                // if (!isListening) {
+                //     setTimeout(() => toggleListening(), 500);
+                // }
+            };
+
+            utterance.onerror = (event) => {
+                console.error('Speech synthesis error:', event);
+                setAIState('idle');
+            };
+
+            synth.speak(utterance);
+        }
+
+        function setupEventListeners() {
+            // Hold-to-speak pattern
+            micBtn.addEventListener('mousedown', startListening);
+            micBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startListening(); });
+            
+            micBtn.addEventListener('mouseup', stopListening);
+            micBtn.addEventListener('mouseleave', stopListening);
+            micBtn.addEventListener('touchend', (e) => { e.preventDefault(); stopListening(); });
+            
+            clearBtn.addEventListener('click', clearConversation);
+            
+            // Text input fallback
+            const textInput = document.getElementById('textInput');
+            const sendTextBtn = document.getElementById('sendTextBtn');
+            
+            sendTextBtn.addEventListener('click', () => {
+                const text = textInput.value.trim();
+                if (text) {
+                    console.log('📤 Sending text:', text);
+                    sendSpeechToAI(text, 1.0);
+                    textInput.value = '';
+                }
+            });
+            
+            textInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    sendTextBtn.click();
+                }
+            });
+            
+            // Check microphone permission on load
+            checkMicrophonePermission();
+        }
+        
+        function startListening() {
+            if (!recognition || isListening) return;
+            
+            synth.cancel(); // Stop any AI speech
+            
+            try {
+                recognition.start();
+                console.log('🎬 Starting recognition...');
+            } catch (error) {
+                console.error('Error starting recognition:', error);
+                statusText.textContent = 'Error starting mic. Try again.';
+            }
+        }
+        
+        function stopListening() {
+            if (!recognition || !isListening) return;
+            
+            try {
+                recognition.stop();
+                console.log('⏹ Stopping recognition...');
+            } catch (error) {
+                console.error('Error stopping recognition:', error);
+            }
+        }
+        
+        async function checkMicrophonePermission() {
+            try {
+                const result = await navigator.permissions.query({ name: 'microphone' });
+                updateDebugMic(result.state);
+                
+                if (result.state === 'granted') {
+                    debugInfo.style.display = 'none';
+                } else if (result.state === 'prompt') {
+                    statusText.textContent = 'Click "Hold to Speak" and allow microphone access';
+                    debugInfo.style.display = 'block';
+                } else if (result.state === 'denied') {
+                    statusText.textContent = '❌ Microphone access blocked. Click 🔒 icon to allow.';
+                    micBtn.disabled = true;
+                    debugInfo.style.display = 'block';
+                }
+                
+                result.onchange = () => {
+                    updateDebugMic(result.state);
+                    if (result.state === 'granted') {
+                        micBtn.disabled = false;
+                        statusText.textContent = 'Microphone ready! Hold button to speak';
+                        debugInfo.style.display = 'none';
+                    }
+                };
+            } catch (e) {
+                console.log('Permission API not supported');
+            }
+        }
+        
+        function updateDebugStatus(status) {
+            if (debugStatus) debugStatus.textContent = status;
+        }
+        
+        function updateDebugMic(state) {
+            if (debugMic) debugMic.textContent = state;
+        }
+
+        function setAIState(state) {
+            aiAvatar.className = 'ai-avatar';
+            statusText.className = 'status-text';
+
+            if (state === 'listening') {
+                aiAvatar.classList.add('listening');
+                statusText.classList.add('listening');
+            } else if (state === 'speaking') {
+                aiAvatar.classList.add('speaking');
+                statusText.classList.add('speaking');
+            } else if (state === 'thinking') {
+                aiAvatar.classList.add('thinking');
+                statusText.classList.add('thinking');
+            }
+        }
+
+        function addToTranscript(role, text) {
+            // Remove placeholder if present
+            if (conversation.length === 0) {
+                transcript.innerHTML = '';
+            }
+
+            conversation.push({ role, text });
+
+            const div = document.createElement('div');
+            div.className = role === 'user' ? 'user-speech' : 'ai-speech';
+            div.innerHTML = `<strong>${role === 'user' ? 'You:' : 'AI:'}</strong> ${text}`;
+            transcript.appendChild(div);
+
+            // Scroll to bottom
+            transcript.scrollTop = transcript.scrollHeight;
+        }
+
+        function clearConversation() {
+            conversation = [];
+            transcript.innerHTML = `
+                <div style="opacity: 0.5; text-align: center; padding: 20px;">
+                    Start speaking to see your conversation here...
+                </div>
+            `;
+            synth.cancel();
+            if (isListening) {
+                recognition.stop();
+            }
+        }
+
+        function updateConnectionStatus(status) {
+            connectionStatus.className = 'connection-status ' + status;
+            connectionStatus.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+        }
+
+        // Send periodic ping to keep connection alive
+        setInterval(() => {
+            if (isConnected && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'ping' }));
+            }
+        }, 30000);
+
+        // Initialize when page loads
+        window.addEventListener('load', init);
+
+        // Handle page visibility change
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden && isListening) {
+                recognition.stop();
+            }
+        });
+    </script>
+</body>
+</html>
